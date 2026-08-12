@@ -152,10 +152,9 @@
     ]
   },
   "voice": {
-    "provider": "11labs",
-    "voiceId": "REPLACE_WITH_ARABIC_CAPABLE_VOICE_ID",
-    "model": "eleven_multilingual_v2",
-    "_voice_note": "Pick a multilingual/Arabic-capable ElevenLabs voice from the account connected to Vapi. Not verified against a live Vapi or ElevenLabs account from this environment."
+    "provider": "azure",
+    "voiceId": "ar-SA-HamedNeural",
+    "_voice_note": "Vapi built-in voice (Azure neural TTS), no separate ElevenLabs/Azure account needed - billed through Vapi. ar-SA-HamedNeural is a male Gulf-adjacent Arabic voice (closest Azure locale to Omani Arabic is Saudi ar-SA; Azure has no ar-OM). Also bilingual-capable for the English portions of calls. Swap for ar-SA-ZariyaNeural (female) or any other Vapi-supported voice in the dashboard if preferred. Not verified against a live Vapi account from this environment - listen to a sample call and adjust if needed."
   },
   "transcriber": {
     "provider": "deepgram",
