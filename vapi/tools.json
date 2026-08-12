@@ -1,0 +1,139 @@
+{
+  "_comment": "Standalone reference copy of the tool schemas embedded in assistant.json -> model.tools. Keep in sync manually. server.url/server.secret must match the Etihad One - Tools Router n8n workflow (n8n/workflows/tools-router.ts) and its Header Auth credential.",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "find_customer",
+        "description": "Look up an existing customer by phone or email before assuming they are a new customer. Call this near the start of the conversation once you have a phone number or email.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "phone": { "type": "string", "description": "Customer phone number in international format, e.g. +968XXXXXXXX" },
+            "email": { "type": "string", "description": "Customer email address, used only if phone is not available" }
+          }
+        }
+      },
+      "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "create_customer",
+        "description": "Create a new customer record. Use only after find_customer confirmed no existing record.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "phone": { "type": "string" },
+            "email": { "type": "string" },
+            "customer_name": { "type": "string" },
+            "customer_type": { "type": "string", "enum": ["regular_importer", "retailer", "ecommerce", "company", "contractor", "trader", "individual", "other"] },
+            "request_type": { "type": "string" },
+            "notes": { "type": "string" }
+          },
+          "required": ["phone"]
+        }
+      },
+      "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "update_customer",
+        "description": "Update an existing customer's record with new information gathered during the call. Use only after find_customer confirmed an existing record.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "phone": { "type": "string" },
+            "email": { "type": "string" },
+            "customer_name": { "type": "string" },
+            "customer_type": { "type": "string" },
+            "request_type": { "type": "string" },
+            "shipment_number": { "type": "string" },
+            "notes": { "type": "string" }
+          },
+          "required": ["phone"]
+        }
+      },
+      "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "create_quote_request",
+        "description": "Log a shipment quote request with whatever cargo/shipping details the customer provided. Creates the customer record if they are new.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "phone": { "type": "string" },
+            "email": { "type": "string" },
+            "customer_name": { "type": "string" },
+            "cargo_type": { "type": "string" },
+            "cargo_description": { "type": "string" },
+            "origin": { "type": "string" },
+            "destination": { "type": "string" },
+            "shipping_method": { "type": "string", "enum": ["sea_fcl", "sea_lcl", "air"] },
+            "quantity": { "type": "string" },
+            "weight": { "type": "string" },
+            "dimensions": { "type": "string" },
+            "supplier_count": { "type": "string" },
+            "shipment_frequency": { "type": "string" },
+            "notes": { "type": "string" }
+          },
+          "required": ["phone"]
+        }
+      },
+      "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "create_meeting",
+        "description": "Check calendar availability and book a real meeting. Only tell the customer it is booked after this tool reports success (result starting with 'meeting_booked'). If it reports 'slot_not_available_not_booked', do not claim it is booked.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "phone": { "type": "string" },
+            "customer_name": { "type": "string" },
+            "startTime": { "type": "string", "description": "ISO 8601 datetime with timezone offset, e.g. 2026-08-15T10:00:00+04:00" },
+            "endTime": { "type": "string", "description": "ISO 8601 datetime with timezone offset" },
+            "notes": { "type": "string" }
+          },
+          "required": ["phone", "startTime", "endTime"]
+        }
+      },
+      "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_customer_history",
+        "description": "Retrieve a short summary of this customer's past calls so you do not ask them to repeat themselves. Call this after find_customer confirms an existing record.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "phone": { "type": "string" }
+          },
+          "required": ["phone"]
+        }
+      },
+      "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_tracking_status",
+        "description": "Save a shipment number the customer gives you. There is no live tracking source connected, so this only saves the number - never state a tracking location or delivery status to the customer.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "phone": { "type": "string" },
+            "shipment_number": { "type": "string" }
+          },
+          "required": ["phone", "shipment_number"]
+        }
+      },
+      "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+    }
+  ]
+}

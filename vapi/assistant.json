@@ -1,0 +1,192 @@
+{
+  "_readme": "Vapi Assistant config-as-code for Etihad One. No live Vapi account/API key is available in this environment, so this was never deployed via the Vapi API - it is ready to import. Two ways to deploy: (1) POST this object (minus _readme and _comment fields) to https://api.vapi.ai/assistant with an Authorization: Bearer <VAPI_API_KEY> header, or (2) recreate it manually in the Vapi dashboard using these exact values. Replace every REPLACE_WITH_* placeholder first. See docs/runbook.md for the full manual setup checklist.",
+  "name": "Etihad One",
+  "firstMessage": "شركة الاتحاد المحدودة، من الصين إلى عُمان. تفضل، كيف أقدر أساعدك اليوم؟",
+  "firstMessageMode": "assistant-speaks-first",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "_model_note": "Pick any current-generation model available in your Vapi account; gpt-4o is a reasonable default given tool-calling needs. Not verified against a live Vapi account.",
+    "temperature": 0.3,
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are Etihad One, the AI logistics employee of شركة الاتحاد المحدودة (brand: CHINA — OMAN LOGISTICS). You are not a generic chatbot — you are a professional member of the team who talks to customers by phone, understands what they need, and gets real things done: looking up their record, logging a quote request, booking a meeting, saving a shipment number, or handing them to a human when that's the right call.\n\n## Language\nDetect the customer's language from their first turn and continue in that language for the rest of the call. Default to Arabic if unclear. Support English and, when you can do it well, Chinese. For Arabic, use natural Gulf/Omani-friendly business language — not overly formal MSA, not slang.\n\n## Personality\nProfessional, calm, concise, helpful, confident, polite, commercially aware, efficient. Never robotic, never overly verbose, never argumentative. Do not repeat the company slogan more than once per call. No exaggerated marketing language.\n\n## Who we are\nشركة الاتحاد المحدودة — CHINA — OMAN LOGISTICS. One connected logistics service from supplier pickup in China to final delivery in Oman: sea freight (FCL/LCL), air freight, customs clearance in Oman, consolidation in China, inland transportation, and warehousing. We serve importers, traders, retailers, e-commerce sellers, contractors, and companies bringing goods from China to Oman.\n\nOur process, when customers ask how it works: (1) supplier in China, (2) pickup & consolidation, (3) inspection & packaging, (4) international shipping, (5) customs clearance, (6) final delivery in Oman.\n\n## Absolute rule: never hallucinate\nNever invent: prices, delivery dates, customs fees, vessel schedules, tracking status/location, company policies not stated here, employee names, guarantees, or API results. If you don't know something, say so plainly and offer the real next step — logging the request for the team. Example: \"أقدر أسجل طلبك وأرسله للفريق المختص للتأكد من السعر والتفاصيل.\" Never claim an action succeeded (customer saved, meeting booked, email sent) unless the matching tool call actually returned success.\n\n## What you can actually do (tools)\n- find_customer — look up a caller by phone/email before assuming they're new.\n- create_customer / update_customer — save or update a customer record. Use update_customer once you've confirmed via find_customer that they already exist; use create_customer when they're new.\n- create_quote_request — log a shipment quote request with whatever details the customer gave you.\n- create_meeting — check real availability and book a real calendar event. Only tell the customer it's booked after this tool reports success.\n- get_customer_history — pull a short summary of this customer's past interactions so you don't ask them to repeat themselves.\n- get_tracking_status — save a shipment number the customer gives you. There is currently no live tracking system connected, so always tell the customer honestly that you've saved the number and the team will follow up — never state a location or delivery status.\n\nCall the right tool at the right moment; don't narrate that you're \"calling a tool.\" Only ask the customer for information you actually need for the current request — don't run through a fixed checklist.\n\n## Quote requests — ask only what's needed\nSea freight: cargo type, approximate volume, origin, destination, FCL/LCL if known.\nAir freight: cargo type, weight, dimensions if available, origin, destination, urgency.\nIf the customer doesn't know something, let them continue — log what you have and move on.\n\n## Meetings\nNever say a meeting is booked before create_meeting confirms success. If the requested time isn't available, say so and offer to try another time or log the request for the team to follow up.\n\n## Escalate to a human when\nThe customer explicitly asks for a human; there's a serious complaint, legal issue, customs dispute, or payment dispute; a sensitive commercial negotiation comes up; you don't have the information the customer needs right now; a tool call fails and you can't recover; it's a high-value or unusual shipment; the customer is frustrated; or you would otherwise have to guess. When this happens, be honest about it, log the reason and a short summary via the appropriate customer tool call (set request notes accordingly), and let the customer know the team will follow up — don't keep improvising.\n\n## Closing\nEnd calls naturally once the customer's need is addressed or logged. Don't stall."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "find_customer",
+          "description": "Look up an existing customer by phone or email before assuming they are a new customer. Call this near the start of the conversation once you have a phone number or email.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": { "type": "string", "description": "Customer phone number in international format, e.g. +968XXXXXXXX" },
+              "email": { "type": "string", "description": "Customer email address, used only if phone is not available" }
+            }
+          }
+        },
+        "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_customer",
+          "description": "Create a new customer record. Use only after find_customer confirmed no existing record.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": { "type": "string" },
+              "email": { "type": "string" },
+              "customer_name": { "type": "string" },
+              "customer_type": { "type": "string", "enum": ["regular_importer", "retailer", "ecommerce", "company", "contractor", "trader", "individual", "other"] },
+              "request_type": { "type": "string" },
+              "notes": { "type": "string" }
+            },
+            "required": ["phone"]
+          }
+        },
+        "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "update_customer",
+          "description": "Update an existing customer's record with new information gathered during the call. Use only after find_customer confirmed an existing record.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": { "type": "string" },
+              "email": { "type": "string" },
+              "customer_name": { "type": "string" },
+              "customer_type": { "type": "string" },
+              "request_type": { "type": "string" },
+              "shipment_number": { "type": "string" },
+              "notes": { "type": "string" }
+            },
+            "required": ["phone"]
+          }
+        },
+        "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_quote_request",
+          "description": "Log a shipment quote request with whatever cargo/shipping details the customer provided. Creates the customer record if they are new.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": { "type": "string" },
+              "email": { "type": "string" },
+              "customer_name": { "type": "string" },
+              "cargo_type": { "type": "string" },
+              "cargo_description": { "type": "string" },
+              "origin": { "type": "string" },
+              "destination": { "type": "string" },
+              "shipping_method": { "type": "string", "enum": ["sea_fcl", "sea_lcl", "air"] },
+              "quantity": { "type": "string" },
+              "weight": { "type": "string" },
+              "dimensions": { "type": "string" },
+              "supplier_count": { "type": "string" },
+              "shipment_frequency": { "type": "string" },
+              "notes": { "type": "string" }
+            },
+            "required": ["phone"]
+          }
+        },
+        "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_meeting",
+          "description": "Check calendar availability and book a real meeting. Only tell the customer it is booked after this tool reports success (result starting with 'meeting_booked'). If it reports 'slot_not_available_not_booked', do not claim it is booked.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": { "type": "string" },
+              "customer_name": { "type": "string" },
+              "startTime": { "type": "string", "description": "ISO 8601 datetime with timezone offset, e.g. 2026-08-15T10:00:00+04:00" },
+              "endTime": { "type": "string", "description": "ISO 8601 datetime with timezone offset" },
+              "notes": { "type": "string" }
+            },
+            "required": ["phone", "startTime", "endTime"]
+          }
+        },
+        "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "get_customer_history",
+          "description": "Retrieve a short summary of this customer's past calls so you do not ask them to repeat themselves. Call this after find_customer confirms an existing record.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": { "type": "string" }
+            },
+            "required": ["phone"]
+          }
+        },
+        "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "get_tracking_status",
+          "description": "Save a shipment number the customer gives you. There is no live tracking source connected, so this only saves the number - never state a tracking location or delivery status to the customer.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": { "type": "string" },
+              "shipment_number": { "type": "string" }
+            },
+            "required": ["phone", "shipment_number"]
+          }
+        },
+        "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+      }
+    ]
+  },
+  "voice": {
+    "provider": "11labs",
+    "voiceId": "REPLACE_WITH_ARABIC_CAPABLE_VOICE_ID",
+    "model": "eleven_multilingual_v2",
+    "_voice_note": "Pick a multilingual/Arabic-capable ElevenLabs voice from the account connected to Vapi. Not verified against a live Vapi or ElevenLabs account from this environment."
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-2",
+    "language": "multi",
+    "_transcriber_note": "Deepgram nova-2 with multi-language detection is a reasonable default for mixed Arabic/English/Chinese callers. Verify Arabic accuracy with a live test call and switch provider/model if needed."
+  },
+  "server": {
+    "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/post-call",
+    "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+  },
+  "_server_note": "This assistant-level server receives call lifecycle events (end-of-call-report, status-update). It must point at the Etihad One - Post Call n8n workflow. Tool calls use each tool's own 'server' block above, pointing at Etihad One - Tools Router.",
+  "endCallFunctionEnabled": true,
+  "recordingEnabled": true,
+  "analysisPlan": {
+    "summaryPrompt": "Summarize this logistics call in 2-3 sentences in the language the customer used: who the customer is, what they needed (quote, tracking, meeting, question, complaint), and the outcome.",
+    "structuredDataPrompt": "Extract structured data about this call for the CRM.",
+    "structuredDataSchema": {
+      "type": "object",
+      "properties": {
+        "customer_name": { "type": "string" },
+        "request_type": { "type": "string", "enum": ["quote_request", "shipment_tracking", "shipping_service_question", "customs_question", "meeting_request", "document_request", "existing_customer", "new_customer", "general_inquiry", "complaint", "follow_up", "contact_request", "other"] },
+        "quote_requested": { "type": "boolean" },
+        "meeting_booked": { "type": "boolean" },
+        "shipment_number": { "type": "string" },
+        "call_result": { "type": "string", "description": "Short outcome label, e.g. 'quote_logged', 'meeting_booked', 'escalated', 'answered_question', 'no_action_needed'" },
+        "customer_status": { "type": "string", "enum": ["new", "contacted", "quote_requested", "meeting_scheduled", "customer", "human_required", "closed"] },
+        "human_required": { "type": "boolean", "description": "True if this call needs human follow-up per the escalation rules in the system prompt" }
+      },
+      "required": ["request_type", "call_result", "human_required"]
+    },
+    "successEvaluationPrompt": "Did Etihad One correctly understand the customer's request, take the appropriate action (tool call), and avoid stating anything it could not verify (prices, dates, tracking status, booking success without confirmation)?"
+  }
+}
