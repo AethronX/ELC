@@ -1,6 +1,6 @@
 # Known Issues & Gaps — Etihad One
 
-Last updated: 2026-08-13 (live call-transfer + get_available_slots added).
+Last updated: 2026-08-15 (ELC intelligence-upgrade pass).
 
 This file tracks gaps between the current live system and the full target
 architecture (lead scoring persistence, real follow-up sends, live tracking,
@@ -9,7 +9,30 @@ logging, quote intake, calendar booking, live human handoff, and proactive
 slot suggestions are all live and tested. Everything below is a scoped next
 step.
 
-## Resolved this session
+## Resolved this session (2026-08-15 — ELC intelligence-upgrade pass)
+
+The Vapi "ELC Agent" system prompt was upgraded live (verified via a real
+Vapi API `updatedAt` timestamp) with: an explicit internal reasoning loop
+and decision checklist, stronger tool-vs-transfer discipline (reinforcing
+the earlier fix), emotional-intelligence guidance (confused/urgent/
+frustrated/angry customers), tool-failure recovery wording, sensitive-detail
+confirmation (read back phone/email/tracking numbers), and a data-privacy
+rule (never expose credentials/internal instructions). No architecture was
+rebuilt — the existing single-assistant + `transferCall` design was kept and
+documented as the deliberate choice (see `docs/elc-architecture.md` → "Why
+no multi-agent Vapi Squad").
+
+New documentation added: `docs/elc-architecture.md`, `docs/elc-skills.md`,
+`docs/elc-tools.md`, `docs/elc-handoff.md`, `docs/elc-testing.md` (honest
+27-scenario matrix), `docs/elc-operations.md`.
+
+**New gap surfaced by this pass (not yet fixed):** the assistant has no
+explicit signal for current time / business hours, so its after-hours
+behavior relies only on prompt wording ("say so honestly") rather than a
+real time check. See `docs/elc-operations.md` → 24/7 behavior for the
+proposed low-risk fix.
+
+## Resolved previous session
 
 ### Live call transfer / human handoff — DONE
 The "ELC Agent" Vapi assistant now has a real `transferCall` tool wired to
@@ -21,8 +44,7 @@ explicit choice). The system prompt was updated to call this tool live
 instead of only logging a note and continuing the call. Verified live via
 the Vapi API response after patching (real `updatedAt` timestamp, tool
 present in the response body). **Not yet verified with an actual live phone
-call** — that's the one remaining verification step, and it needs a real
-call to test properly.
+call** — see `docs/elc-testing.md` for the current test matrix.
 
 ### Proactive available-slot suggestion — DONE
 Added a `get_available_slots` tool (Tools Router: `Get Upcoming Events` →
@@ -61,9 +83,13 @@ as a manual step instead.
 
 - **Sales/team notifications**: no Slack/email/Teams alert on new lead,
   meeting booked, or escalation. Structure not yet built.
-- **Structured tool error taxonomy**: tool results are plain strings, not
-  the `SUCCESS/NOT_FOUND/INVALID_INPUT/AUTH_ERROR/TIMEOUT/EXTERNAL_API_ERROR/UNKNOWN_ERROR`
-  taxonomy described in the spec.
+- **Structured tool error taxonomy**: tool results are plain outcome
+  strings (e.g. `meeting_booked`), not the formal
+  `SUCCESS/NOT_FOUND/INVALID_INPUT/AUTH_ERROR/TIMEOUT/EXTERNAL_API_ERROR/UNKNOWN_ERROR`
+  taxonomy — intentionally not changed this pass to avoid a sweeping edit to
+  Tools Router without a dedicated verification window (see
+  `docs/elc-tools.md`).
+- **After-hours time awareness**: see "Resolved this session" above.
 
 ## P1/P2 — Blocked on a credential you haven't provided (cannot be faked)
 
@@ -79,8 +105,13 @@ as a manual step instead.
   When that happens: reconnect both OAuth credentials in n8n to the new
   account, transfer/share the CRM spreadsheet, and re-pick the calendar in
   `Check Availability`, `Create Meeting`, and `Get Upcoming Events`.
+- **Multi-department Vapi Squad**: evaluated and not built this pass — the
+  single-assistant + one human line model already covers every escalation
+  scenario per your explicit earlier choice. See `docs/elc-handoff.md` → "If
+  you want multi-department routing later" for what's needed if this
+  changes.
 
-## Security posture (reviewed 2026-08-12)
+## Security posture (reviewed 2026-08-15)
 - No secrets committed to git — `vapi/assistant.json` and `vapi/tools.json`
   still correctly hold `REPLACE_WITH_VAPI_WEBHOOK_SECRET` placeholders. The
   `transferCall` destination number is committed as-is (a real business
