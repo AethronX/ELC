@@ -4,11 +4,22 @@
 Nothing in this document has been implemented this pass — see
 `ELC-SYSTEM-AUDIT.md` §"Data consistency risks" for how this gap was found.
 
+## Correction (2026-08-19, V2.1 audit)
+
+`customer_id` already exists as a real column in the Customers sheet and is
+generated on creation (`"CUS-" + $now.toMillis()`) in both Tools Router's
+`Generate New Customer Fields` and Post Call's `Generate New Customer Fields
+(post-call)`. The gap below is narrower than earlier drafts of this document
+stated: it's a **read/return-shape gap**, not a schema gap. `customer_id` is
+never *returned* in any tool result string, so the assistant never sees it
+and can't pass it back on a later call — the storage side is already correct.
+
 ## The gap, precisely
 
-Vapi today passes **no `customer_id` of any kind** in tool-call payloads.
-Every lookup in Tools Router (`find_customer`, `get_customer_history`, etc.)
-matches on `phone` alone. That means:
+Vapi today passes **no `customer_id` of any kind** in tool-call payloads, and
+no tool result returns it either. Every lookup in Tools Router
+(`find_customer`, `get_customer_history`, etc.) matches on `phone` alone.
+That means:
 
 - A customer who calls from a different number is invisible to
   `find_customer`, even if they exist in the Customers sheet under another
@@ -23,24 +34,29 @@ matches on `phone` alone. That means:
 
 ## Target: `customer_id` as the central identity
 
-- Generated once, at first contact, by `create_customer` (e.g. row-based ID
-  from the Customers sheet, or a UUID stamped into a new "customer_id" column
-  — the current 16-column Customers schema does not have this column yet).
-- Returned by `find_customer` alongside the existing fields, so once a
-  customer is found, `customer_id` becomes available to every subsequent tool
-  call in that conversation.
+- Already generated once, at first contact, by `create_customer`/
+  `create_quote_request` (row-based `"CUS-" + timestamp` ID) — no schema
+  change needed, confirmed present in the live Customers sheet.
+- Not yet returned by `find_customer` alongside the existing fields — this is
+  the one remaining step. Once returned, `customer_id` becomes available to
+  every subsequent tool call in that conversation (the assistant would need
+  to be told, via the system prompt, to pass it back on later tool calls).
 - `phone`, `email`, and (later) `whatsapp_id` become **lookup keys that
   resolve to a `customer_id`**, not the identity itself.
 
-This is a schema change (new column) and a Tools Router logic change (return
-+ propagate `customer_id`), not something safely additive in the way
-`get_business_status` was. Per the user's explicit "test after each phase,
-one thing at a time" rule, this should be its own dedicated pass:
-1. Add `customer_id` column to Customers sheet (additive — doesn't touch
-   existing columns/rows).
-2. Update `create_customer` to generate and write it.
-3. Update `find_customer` to return it.
-4. Only once verified live, start having other branches accept/use it.
+This is now a pure Tools Router logic change (return `customer_id` from
+`find_customer`'s `Found Result` node) plus a small prompt update — no schema
+change, since the column and generation logic already exist. Still not
+attempted in the V2.1 pass (scoped to correlation_id only — see
+`ELC-V2.1-IMPLEMENTATION-PLAN.md`), but meaningfully smaller than previously
+documented:
+1. ~~Add `customer_id` column to Customers sheet~~ — already exists, not needed.
+2. ~~Update `create_customer` to generate and write it~~ — already does this.
+3. Update `find_customer`'s `Found Result` node to include `customer_id` in
+   the result string (or, once structured responses land, in `data`).
+4. Update the system prompt to tell the assistant to reuse `customer_id` on
+   later calls in the same conversation once it has one.
+5. Only once verified live, start having other branches accept/use it.
 
 ## Conversation context model
 

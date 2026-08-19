@@ -1,8 +1,12 @@
-# ELC Agent — Observability & Correlation ID Plan (spec only)
+# ELC Agent — Observability & Correlation ID Plan
 
-**Status: specification only.** Nothing in this document is implemented this
-pass. Documents the target and why it's sequenced after the structural work
-(customer identity, error taxonomy) rather than before it.
+**Status: correlation ID implemented (V2.1 Phase 1, 2026-08-19). Everything
+else in this document (metrics, execution trace events, alerting) remains
+specification only.** See `ELC-V2.1-RELIABILITY.md` for the implemented
+design in full detail; this document keeps the original reasoning for why
+correlation ID was sequenced where it was, now updated to reflect that it
+shipped ahead of customer identity/error taxonomy rather than after them —
+see "Why the sequencing changed" below.
 
 ## What exists today
 
@@ -34,16 +38,24 @@ Once in place, a single ID lets you trace one customer interaction across
 Vapi's dashboard, every Tools Router execution it triggered, and every Sheets
 row/Calendar event it created — without timestamp-matching.
 
-## Why this isn't built yet
+## Why the sequencing changed
 
-Correlation ID propagation only becomes valuable once there's a stable
-`customer_id` to key off of (see `ELC-CUSTOMER-CONTEXT.md`) and structured
-tool responses to carry it in (`ELC-ERROR-TAXONOMY.md`'s `data` field is the
-natural home for it). Building correlation IDs first, before those two land,
-would mean re-touching every Tools Router branch twice — once to add the ID,
-again when the structured-response rollout happens. Sequencing it after both
-avoids that rework, consistent with the project's own "small, testable,
-reversible" rule.
+This document originally argued correlation ID should come *after*
+`customer_id` and structured responses, to avoid touching Tools Router
+branches twice. The V2.1 pass (2026-08-19) implemented it *first* instead,
+once the actual design was worked out: correlation_id is **derived from
+Vapi's `call.id`**, computed in one new node at each workflow's entry point
+(`Assign Correlation ID` in Tools Router, `Assign Correlation ID (post-call)`
+in Post Call), and returned as a top-level field in the Tools Router response
+— without touching any of the 12+ terminal branch nodes at all. This avoided
+the "touch every branch twice" problem the original sequencing was trying to
+prevent, so there was no actual reason left to wait for `customer_id` or the
+structured-response rollout. See `ELC-V2.1-RELIABILITY.md` §1 for the full
+design and verification status.
+
+customer_id and structured responses are still sequenced after this, for
+their own reasons (schema/prompt changes, tool-result shape changes) — not
+because correlation_id depends on them.
 
 ## Minimal logging discipline (recommended now, not built)
 

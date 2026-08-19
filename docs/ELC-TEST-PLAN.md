@@ -21,15 +21,20 @@ phase is implemented — not yet run.
 | `get_business_status` — routing isolation (only new rule fires, no other branch/fallback) | ✅ Verified live | Execution 754 `Route By Tool` trace: only output index 8 fired |
 | Unknown tool name → fallback | ✅ Verified (project history, pre-V2) | "Unknown Tool Result" node exists and is exercised by the Switch fallback |
 | Auth: wrong/missing `x-vapi-secret` → Unauthorized Response | ✅ Verified live (incidentally) | Execution 753, 2026-08-19: placeholder secret correctly routed to `Unauthorized Response` |
+| `Assign Correlation ID` node executes without breaking the response chain | ✅ Verified live (execution status only) | Executions 756, 757, 2026-08-19: both `status: success` with the new node in the chain |
+| `correlation_id` present and correct in the actual JSON response body | ⚠️ **Not verified** — see below | `get_execution`/`search_executions`/`prepare_test_pin_data` all returned `Tool not found` for the rest of this session after an MCP reconnect; logged honestly in `ELC-V2.1-RELIABILITY.md` §8, not fabricated |
+| Post Call independently derives the same `correlation_id` as Tools Router for the same `call.id` | ⚠️ **Not verified** — code reviewed (identical hash function, correct field name `callId`), not executed, to avoid a real Sheets write via `execute_workflow` while `prepare_test_pin_data` was unavailable | `ELC-V2.1-RELIABILITY.md` §8 |
+| Vapi tolerates the extra `correlation_id` field in the tool-result response | ❌ Not attempted — no live outbound calling in this session | `ELC-V2.1-RELIABILITY.md` §8, highest-remaining-risk item |
 
 ## Not yet testable (blocked or unbuilt)
 
 | Scenario | Blocked by |
 |---|---|
 | WhatsApp message → shared Tools Router → reply | No WhatsApp API credential (`BLOCKED_DEPENDENCY`) |
-| Cross-channel context (phone → WhatsApp same customer) | Unified `customer_id` not built |
+| Cross-channel context (phone → WhatsApp same customer) | Unified `customer_id` return-shape not built (storage already exists — see `ELC-CUSTOMER-CONTEXT.md` correction) |
 | Structured `{success,code,...}` response branching | `ELC-ERROR-TAXONOMY.md` rollout not started |
-| Correlation ID trace across Vapi → n8n → Sheets → Calendar | `ELC-OBSERVABILITY.md` not started |
+| Execution Trace event stream | `ELC-V2.1-RELIABILITY.md` §6 — designed, not built |
+| Idempotency 2.0 (`idempotency_key`, duplicate business events) | `ELC-V2.1-RELIABILITY.md` §5 — designed, not built |
 | Live inbound call end-to-end (real phone number) | Trial Vapi/Twilio number confirmed causing call drops — paid number upgrade in progress per audit, not this session's blocker to fix |
 
 ## `get_business_status` — additional scenarios still worth running before relying on it in a live demo
