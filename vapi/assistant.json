@@ -148,6 +148,18 @@
           }
         },
         "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "get_business_status",
+          "description": "Check whether Etihad One is currently open for business (Sun-Thu, 09:00-17:00 Asia/Muscat) before promising a callback time or telling the customer someone will reach them right away. Takes no parameters.",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
       }
     ]
   },
