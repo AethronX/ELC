@@ -1,5 +1,5 @@
 {
-  "_comment": "Standalone reference copy of the tool schemas embedded in assistant.json -> model.tools. Keep in sync manually. server.url/server.secret must match the Etihad One - Tools Router n8n workflow (n8n/workflows/tools-router.ts) and its Header Auth credential.",
+  "_comment": "Standalone reference copy of the tool schemas embedded in assistant.json -> model.tools. Keep in sync manually. server.url/server.secret must match the Etihad One - Tools Router n8n workflow (n8n/workflows/tools-router.ts) and its Header Auth credential. The transferCall destination number is a real business config value (the designated human escalation contact), not a secret - it is committed as-is.",
   "tools": [
     {
       "type": "function",
@@ -88,6 +88,15 @@
     {
       "type": "function",
       "function": {
+        "name": "get_available_slots",
+        "description": "Get a few real open meeting slots from the calendar to offer the customer, instead of asking them to guess a time. Call this when the customer wants to book a meeting but hasn't proposed a specific time, or after a proposed time turned out unavailable.",
+        "parameters": { "type": "object", "properties": {} }
+      },
+      "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+    },
+    {
+      "type": "function",
+      "function": {
         "name": "create_meeting",
         "description": "Check calendar availability and book a real meeting. Only tell the customer it is booked after this tool reports success (result starting with 'meeting_booked'). If it reports 'slot_not_available_not_booked', do not claim it is booked.",
         "parameters": {
@@ -111,9 +120,7 @@
         "description": "Retrieve a short summary of this customer's past calls so you do not ask them to repeat themselves. Call this after find_customer confirms an existing record.",
         "parameters": {
           "type": "object",
-          "properties": {
-            "phone": { "type": "string" }
-          },
+          "properties": { "phone": { "type": "string" } },
           "required": ["phone"]
         }
       },
@@ -146,6 +153,17 @@
         }
       },
       "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+    },
+    {
+      "type": "transferCall",
+      "destinations": [
+        {
+          "type": "number",
+          "number": "+96876923072",
+          "message": "بحوّلك الآن لأحد أعضاء فريقنا، لحظة من فضلك.",
+          "description": "Transfer live to the human team for any escalation: explicit human request, complaints, legal/customs disputes, payment or compensation claims, lost or damaged shipments, sensitive negotiations, or anything the assistant cannot resolve confidently."
+        }
+      ]
     }
   ]
 }
