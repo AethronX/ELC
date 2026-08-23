@@ -1,6 +1,6 @@
 # Known Issues & Gaps — Etihad One
 
-Last updated: 2026-08-17 (dedicated ELC calendar).
+Last updated: 2026-08-23 (pre-launch full system check).
 
 This file tracks gaps between the current live system and the full target
 architecture (lead scoring persistence, real follow-up sends, live tracking,
@@ -8,6 +8,29 @@ sales notifications). Nothing here blocks current production use — CRM
 logging, quote intake, calendar booking, live human handoff, and proactive
 slot suggestions are all live and tested. Everything below is a scoped next
 step.
+
+## Resolved 2026-08-23 (pre-launch check) — real routing bug found and fixed
+
+While verifying the system end to end before launch, found that
+`get_business_status` (added 2026-08-19) had a real wiring bug in Tools
+Router's `Route By Tool` Switch node: when it was added as the 9th rule, the
+Switch's fallback ("Unknown Tool Result") was never moved off output index 8
+to the new fallback slot (index 9). Effect: **every** `get_business_status`
+call also fired the fallback branch in parallel (`tool_not_recognized`,
+racing the real response — Vapi could have received either one), and a
+genuinely unrecognized tool name produced **no response at all** (fell
+through to a disconnected output) instead of the intended
+`tool_not_recognized`.
+
+Fixed by rewiring `Unknown Tool Result` from output 8 to output 9. Verified
+live with two `test_workflow` runs: a `get_business_status` call now fires
+`Compute Business Status` alone with a single clean response, and a made-up
+tool name now correctly reaches `Unknown Tool Result` alone. Also confirmed,
+via read-only `find_customer`/`get_available_slots` test calls, that the
+Google Sheets and Google Calendar credentials are both still live — and
+noticed the "ELC" calendar already has 3 real "Etihad One - Customer call"
+events booked for 2026-08-24/27, meaning the system is already taking real
+bookings.
 
 ## Resolved this session (2026-08-17 — dedicated ELC calendar)
 
@@ -56,13 +79,18 @@ incident is now fully resolved.**
 
 ## Still open
 
-- **Outbound-capable phone number for live transfer**: the live phone
-  number is a Vapi-hosted trial number (`provider: "vapi"`), which does not
-  reliably support outbound PSTN legs — this is why `transfer_to_human`
-  connects the assistant but the call ends instead of reaching the human
-  line. Needs either a paid Vapi number or a connected Twilio/Vonage number
-  with outbound calling enabled — a billing/config decision, not fixable in
-  code. The user is deciding on a paid Vapi number as of this session.
+- **Outbound-capable phone number for live transfer**: reconfirmed live on
+  2026-08-23 via the Vapi API (`GET /phone-number`) — still `+19049156313`,
+  `provider: "vapi"`, still the trial number, still attached to the ELC
+  Agent assistant. This does not reliably support outbound PSTN legs — this
+  is why `transfer_to_human` connects the assistant but the call ends
+  instead of reaching the human line. **This is the one real launch blocker
+  for live human transfer** — needs either a paid Vapi number or a
+  connected Twilio/Vonage number with outbound calling enabled, a
+  billing/config decision only the user can make, not fixable in code.
+  Everything else in the system (customer intake, quotes, meeting booking,
+  business-hours awareness, tracking-number save, CRM sync) does not depend
+  on this and is launch-ready independent of it.
 - **Three pre-built, unused Vapi assistants** (Support Agent, Tracking
   Agent, Sales Agent — created 2026-08-11, not referenced in this repo, not
   wired to any phone number) still need input on whether they're an old
