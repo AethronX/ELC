@@ -1,7 +1,7 @@
 {
   "_readme": "Vapi Assistant config-as-code for Etihad One. This mirrors what is live on the connected Vapi account (assistant 'ELC Agent', id f44cf5c8-a491-4afd-9dd2-407c224e3774) as of the ELC intelligence-upgrade pass (reasoning loop, tool-vs-transfer discipline, emotional intelligence, error recovery). Replace REPLACE_WITH_VAPI_WEBHOOK_SECRET with the real shared secret before importing/patching. The transferCall destination number is a real business config value (the designated human escalation contact), not a secret.",
   "name": "ELC Agent",
-  "firstMessage": "شركة الاتحاد المحدودة، من الصين إلى عُمان. تفضل، كيف أقدر أساعدك اليوم؟",
+  "firstMessage": "أهلاً بك، معك الاتحاد المحدودة للشحن من الصين إلى عُمان. تفضل، كيف أقدر أخدمك اليوم؟",
   "firstMessageMode": "assistant-speaks-first",
   "model": {
     "provider": "openai",
