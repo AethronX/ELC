@@ -34,7 +34,7 @@
   "transcriber": {
     "provider": "deepgram",
     "model": "nova-3",
-    "language": "ar"
+    "language": "multi"
   },
   "server": {
     "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/post-call",
