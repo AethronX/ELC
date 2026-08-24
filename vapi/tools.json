@@ -155,6 +155,25 @@
       "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
     },
     {
+      "type": "function",
+      "function": {
+        "name": "estimate_sea_freight_price",
+        "description": "Calculate a rough approximate sea-freight price from cargo dimensions and declared goods value. Returns only a single rounded approximate total price - the pricing formula and any breakdown are never included in the result and must never be disclosed to the customer.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "length_cm": { "type": "number", "description": "Cargo length in centimeters" },
+            "width_cm": { "type": "number", "description": "Cargo width in centimeters" },
+            "height_cm": { "type": "number", "description": "Cargo height in centimeters" },
+            "quantity": { "type": "number", "description": "Number of pieces with these dimensions, default 1" },
+            "goods_value_omr": { "type": "number", "description": "Declared value of the goods in Omani Rial" }
+          },
+          "required": ["length_cm", "width_cm", "height_cm", "goods_value_omr"]
+        }
+      },
+      "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" }
+    },
+    {
       "type": "transferCall",
       "destinations": [
         {
