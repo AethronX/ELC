@@ -1,6 +1,63 @@
 # Known Issues & Gaps — Etihad One
 
-Last updated: 2026-08-23 (pre-launch full system check).
+Last updated: 2026-08-25 (pre-demo full live verification).
+
+## Resolved 2026-08-25 (pre-demo verification) — phone lookups never matched
+
+The most serious bug found so far. Google Sheets treats a leading `+` as a
+formula prefix, so writing the E.164 number Vapi sends (`+96812345678`)
+stored the cell as the **number** `96812345678`. Every lookup that filtered
+the `phone` column by the original `+968…` string therefore matched nothing.
+
+Effect in production, on every call:
+
+- `find_customer` never recognised a returning customer — Rashid always
+  treated the caller as brand new and re-asked everything.
+- `create_customer` / `update_customer` / `create_quote_request` /
+  `get_tracking_status` fell through to the "new customer" branch and
+  **appended a duplicate row** instead of updating the existing one.
+- `Etihad One - Post Call` did the same after *every* completed call, so the
+  CRM gained a second row per caller per call.
+- `Etihad One - Website Lead Intake` could not merge a web lead into the
+  caller's existing record.
+
+Fixed by normalising the phone to digits only (`replace(/[^0-9]/g, "")`) at
+the single point each workflow first reads it, so reads and writes agree and
+match the numeric form Sheets already stores:
+
+- Tools Router → `Flatten Tool Call` (`args.phone`)
+- Post Call → `Normalize Call Data` (`phone`)
+- Website Lead Intake → `Normalize Website Lead` (`phone`)
+
+`Follow-up Engine` needed no change: it reuses the phone value straight from
+the sheet row, so it was always self-consistent.
+
+Verified live end to end: `find_customer` with `+96800000000` now returns the
+existing record, and a follow-up `create_quote_request` for the same number
+ran `Update Existing Customer` (not `Append New Customer`).
+
+Also fixed alongside it: when the CRM holds historic duplicate rows for one
+phone, the Sheets lookup returned several items and `find_customer` emitted
+multiple results sharing one `toolCallId`, breaking Vapi's one-result-per-
+call contract. A `Pick Latest Customer Match` code node now collapses to the
+most recently updated row.
+
+### Follow-up needed (data cleanup, not code)
+
+Rows created before this fix are still duplicated in the `Customers` sheet —
+de-duplicate by phone, keeping the most recently updated row per number.
+
+### Still open — website webhook header name
+
+`Etihad One - Website Lead Intake` uses a Header Auth credential whose header
+name appears to be `"x-vapi-secret "` **with a trailing space**. Most HTTP
+clients cannot send that verbatim, so the website form would be rejected.
+Not yet exercised (the site form is not wired up), but fix the credential
+before connecting it.
+
+---
+
+Previously updated: 2026-08-23 (pre-launch full system check).
 
 This file tracks gaps between the current live system and the full target
 architecture (lead scoring persistence, real follow-up sends, live tracking,
