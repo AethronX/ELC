@@ -14,17 +14,362 @@
       }
     ],
     "tools": [
-      { "type": "function", "function": { "name": "find_customer", "description": "Look up an existing customer by phone or email before assuming they are a new customer. Call this near the start of the conversation once you have a phone number or email.", "parameters": { "type": "object", "properties": { "phone": { "type": "string", "description": "Customer phone number in international format, e.g. +968XXXXXXXX" }, "email": { "type": "string", "description": "Customer email address, used only if phone is not available" } } } }, "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" } },
-      { "type": "function", "function": { "name": "create_customer", "description": "Create a new customer record. Use only after find_customer confirmed no existing record.", "parameters": { "type": "object", "properties": { "phone": { "type": "string" }, "email": { "type": "string" }, "customer_name": { "type": "string" }, "customer_type": { "type": "string", "enum": ["regular_importer", "retailer", "ecommerce", "company", "contractor", "trader", "individual", "other"] }, "request_type": { "type": "string" }, "notes": { "type": "string" } }, "required": ["phone"] } }, "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" } },
-      { "type": "function", "function": { "name": "update_customer", "description": "Update an existing customer's record with new information gathered during the call. Use only after find_customer confirmed an existing record.", "parameters": { "type": "object", "properties": { "phone": { "type": "string" }, "email": { "type": "string" }, "customer_name": { "type": "string" }, "customer_type": { "type": "string" }, "request_type": { "type": "string" }, "shipment_number": { "type": "string" }, "notes": { "type": "string" } }, "required": ["phone"] } }, "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" } },
-      { "type": "function", "function": { "name": "create_quote_request", "description": "Log a shipment quote request with whatever cargo/shipping details the customer provided. Creates the customer record if they are new.", "parameters": { "type": "object", "properties": { "phone": { "type": "string" }, "email": { "type": "string" }, "customer_name": { "type": "string" }, "cargo_type": { "type": "string" }, "cargo_description": { "type": "string" }, "origin": { "type": "string" }, "destination": { "type": "string" }, "shipping_method": { "type": "string", "enum": ["sea_fcl", "sea_lcl", "air"] }, "quantity": { "type": "string" }, "weight": { "type": "string" }, "dimensions": { "type": "string" }, "supplier_count": { "type": "string" }, "shipment_frequency": { "type": "string" }, "notes": { "type": "string" } }, "required": ["phone"] } }, "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" } },
-      { "type": "function", "function": { "name": "get_available_slots", "description": "Get a few real open meeting slots from the calendar to offer the customer, instead of asking them to guess a time. Call this when the customer wants to book a meeting but hasn't proposed a specific time, or after a proposed time turned out unavailable.", "parameters": { "type": "object", "properties": {} } }, "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" } },
-      { "type": "function", "function": { "name": "create_meeting", "description": "Check calendar availability and book a real meeting. Only tell the customer it is booked after this tool reports success (result starting with 'meeting_booked'). If it reports 'slot_not_available_not_booked', do not claim it is booked.", "parameters": { "type": "object", "properties": { "phone": { "type": "string" }, "customer_name": { "type": "string" }, "startTime": { "type": "string", "description": "ISO 8601 datetime with timezone offset, e.g. 2026-08-15T10:00:00+04:00" }, "endTime": { "type": "string", "description": "ISO 8601 datetime with timezone offset" }, "notes": { "type": "string" } }, "required": ["phone", "startTime", "endTime"] } }, "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" } },
-      { "type": "function", "function": { "name": "get_customer_history", "description": "Retrieve a short summary of this customer's past calls so you do not ask them to repeat themselves. Call this after find_customer confirms an existing record.", "parameters": { "type": "object", "properties": { "phone": { "type": "string" } }, "required": ["phone"] } }, "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" } },
-      { "type": "function", "function": { "name": "get_tracking_status", "description": "Save a shipment number the customer gives you. There is no live tracking source connected, so this only saves the number - never state a tracking location or delivery status to the customer.", "parameters": { "type": "object", "properties": { "phone": { "type": "string" }, "shipment_number": { "type": "string" } }, "required": ["phone", "shipment_number"] } }, "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" } },
-      { "type": "function", "function": { "name": "get_business_status", "description": "Check whether Etihad One is currently open for business (Sun-Thu, 09:00-17:00 Asia/Muscat) before promising a callback time or telling the customer someone will reach them right away. Takes no parameters.", "parameters": { "type": "object", "properties": {} } }, "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" } },
-      { "type": "function", "function": { "name": "estimate_sea_freight_price", "description": "Calculate a rough approximate sea-freight price from cargo dimensions and declared goods value. Returns only a single rounded approximate total price - the pricing formula and any breakdown are never included in the result and must never be disclosed to the customer.", "parameters": { "type": "object", "properties": { "length_cm": { "type": "number", "description": "Cargo length in centimeters" }, "width_cm": { "type": "number", "description": "Cargo width in centimeters" }, "height_cm": { "type": "number", "description": "Cargo height in centimeters" }, "quantity": { "type": "number", "description": "Number of pieces with these dimensions, default 1" }, "goods_value_omr": { "type": "number", "description": "Declared value of the goods in Omani Rial" } }, "required": ["length_cm", "width_cm", "height_cm", "goods_value_omr"] } }, "server": { "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools", "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET" } },
-      { "type": "transferCall", "destinations": [ { "type": "number", "number": "+96876923072", "message": "بحوّلك الآن لأحد أعضاء فريقنا، لحظة من فضلك.", "description": "Transfer live to the human team for any escalation: explicit human request, complaints, legal/customs disputes, payment or compensation claims, lost or damaged shipments, sensitive negotiations, or anything the assistant cannot resolve confidently. Only for what tools genuinely cannot do - never a substitute for find_customer / get_available_slots / get_customer_history / get_tracking_status." } ] }
+      {
+        "type": "function",
+        "async": false,
+        "function": {
+          "name": "find_customer",
+          "description": "Look up an existing customer by phone or email before assuming they are a new customer. Call this near the start of the conversation once you have a phone number or email.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string",
+                "description": "Customer phone number in international format, e.g. +968XXXXXXXX"
+              },
+              "email": {
+                "type": "string",
+                "description": "Customer email address, used only if phone is not available"
+              }
+            }
+          }
+        },
+        "server": {
+          "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools",
+          "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+        }
+      },
+      {
+        "type": "function",
+        "async": true,
+        "function": {
+          "name": "create_customer",
+          "description": "Create a new customer record. Use only after find_customer confirmed no existing record.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "customer_name": {
+                "type": "string"
+              },
+              "customer_type": {
+                "type": "string",
+                "enum": [
+                  "regular_importer",
+                  "retailer",
+                  "ecommerce",
+                  "company",
+                  "contractor",
+                  "trader",
+                  "individual",
+                  "other"
+                ]
+              },
+              "request_type": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "phone"
+            ]
+          }
+        },
+        "server": {
+          "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools",
+          "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+        }
+      },
+      {
+        "type": "function",
+        "async": true,
+        "function": {
+          "name": "update_customer",
+          "description": "Update an existing customer's record with new information gathered during the call. Use only after find_customer confirmed an existing record.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "customer_name": {
+                "type": "string"
+              },
+              "customer_type": {
+                "type": "string"
+              },
+              "request_type": {
+                "type": "string"
+              },
+              "shipment_number": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "phone"
+            ]
+          }
+        },
+        "server": {
+          "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools",
+          "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+        }
+      },
+      {
+        "type": "function",
+        "async": true,
+        "function": {
+          "name": "create_quote_request",
+          "description": "Log a shipment quote request with whatever cargo/shipping details the customer provided. Creates the customer record if they are new.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "customer_name": {
+                "type": "string"
+              },
+              "cargo_type": {
+                "type": "string"
+              },
+              "cargo_description": {
+                "type": "string"
+              },
+              "origin": {
+                "type": "string"
+              },
+              "destination": {
+                "type": "string"
+              },
+              "shipping_method": {
+                "type": "string",
+                "enum": [
+                  "sea_fcl",
+                  "sea_lcl",
+                  "air"
+                ]
+              },
+              "quantity": {
+                "type": "string"
+              },
+              "weight": {
+                "type": "string"
+              },
+              "dimensions": {
+                "type": "string"
+              },
+              "supplier_count": {
+                "type": "string"
+              },
+              "shipment_frequency": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "phone"
+            ]
+          }
+        },
+        "server": {
+          "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools",
+          "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+        }
+      },
+      {
+        "type": "function",
+        "async": false,
+        "function": {
+          "name": "get_available_slots",
+          "description": "Get a few real open meeting slots from the calendar to offer the customer, instead of asking them to guess a time. Call this when the customer wants to book a meeting but hasn't proposed a specific time, or after a proposed time turned out unavailable.",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        "server": {
+          "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools",
+          "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+        }
+      },
+      {
+        "type": "function",
+        "async": false,
+        "function": {
+          "name": "create_meeting",
+          "description": "Check calendar availability and book a real meeting. Only tell the customer it is booked after this tool reports success (result starting with 'meeting_booked'). If it reports 'slot_not_available_not_booked', do not claim it is booked.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string"
+              },
+              "customer_name": {
+                "type": "string"
+              },
+              "startTime": {
+                "type": "string",
+                "description": "ISO 8601 datetime with timezone offset, e.g. 2026-08-15T10:00:00+04:00"
+              },
+              "endTime": {
+                "type": "string",
+                "description": "ISO 8601 datetime with timezone offset"
+              },
+              "notes": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "phone",
+              "startTime",
+              "endTime"
+            ]
+          }
+        },
+        "server": {
+          "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools",
+          "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+        }
+      },
+      {
+        "type": "function",
+        "async": false,
+        "function": {
+          "name": "get_customer_history",
+          "description": "Retrieve a short summary of this customer's past calls so you do not ask them to repeat themselves. Call this after find_customer confirms an existing record.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "phone"
+            ]
+          }
+        },
+        "server": {
+          "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools",
+          "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+        }
+      },
+      {
+        "type": "function",
+        "async": true,
+        "function": {
+          "name": "get_tracking_status",
+          "description": "Save a shipment number the customer gives you. There is no live tracking source connected, so this only saves the number - never state a tracking location or delivery status to the customer.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string"
+              },
+              "shipment_number": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "phone",
+              "shipment_number"
+            ]
+          }
+        },
+        "server": {
+          "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools",
+          "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+        }
+      },
+      {
+        "type": "function",
+        "async": false,
+        "function": {
+          "name": "get_business_status",
+          "description": "Check whether Etihad One is currently open for business (Sun-Thu, 09:00-17:00 Asia/Muscat) before promising a callback time or telling the customer someone will reach them right away. Takes no parameters.",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        "server": {
+          "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools",
+          "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+        }
+      },
+      {
+        "type": "function",
+        "async": false,
+        "function": {
+          "name": "estimate_sea_freight_price",
+          "description": "Calculate a rough approximate sea-freight price from cargo dimensions and declared goods value. Returns only a single rounded approximate total price - the pricing formula and any breakdown are never included in the result and must never be disclosed to the customer.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "length_cm": {
+                "type": "number",
+                "description": "Cargo length in centimeters"
+              },
+              "width_cm": {
+                "type": "number",
+                "description": "Cargo width in centimeters"
+              },
+              "height_cm": {
+                "type": "number",
+                "description": "Cargo height in centimeters"
+              },
+              "quantity": {
+                "type": "number",
+                "description": "Number of pieces with these dimensions, default 1"
+              },
+              "goods_value_omr": {
+                "type": "number",
+                "description": "Declared value of the goods in Omani Rial"
+              }
+            },
+            "required": [
+              "length_cm",
+              "width_cm",
+              "height_cm",
+              "goods_value_omr"
+            ]
+          }
+        },
+        "server": {
+          "url": "https://nadhm.app.n8n.cloud/webhook/etihad-one/tools",
+          "secret": "REPLACE_WITH_VAPI_WEBHOOK_SECRET"
+        }
+      },
+      {
+        "type": "transferCall",
+        "destinations": [
+          {
+            "type": "number",
+            "number": "+96876923072",
+            "message": "بحوّلك الآن لأحد أعضاء فريقنا، لحظة من فضلك.",
+            "description": "Transfer live to the human team for any escalation: explicit human request, complaints, legal/customs disputes, payment or compensation claims, lost or damaged shipments, sensitive negotiations, or anything the assistant cannot resolve confidently. Only for what tools genuinely cannot do - never a substitute for find_customer / get_available_slots / get_customer_history / get_tracking_status."
+          }
+        ]
+      }
     ]
   },
   "voice": {
@@ -46,10 +391,18 @@
   "startSpeakingPlan": {
     "waitSeconds": 0.4,
     "smartEndpointingEnabled": true,
-    "transcriptionEndpointingPlan": { "onPunctuationSeconds": 0.1, "onNoPunctuationSeconds": 0.8, "onNumberSeconds": 1.5 }
+    "transcriptionEndpointingPlan": {
+      "onPunctuationSeconds": 0.1,
+      "onNoPunctuationSeconds": 0.8,
+      "onNumberSeconds": 1.5
+    }
   },
   "_startSpeakingPlan_note": "Tuned 2026-08-24 for natural human-paced response latency (was feeling sluggish): waitSeconds 0.6->0.4 (base pause after the customer stops talking before the assistant begins responding), onNoPunctuationSeconds 1.3->0.8 (how long to wait for more speech when the transcript doesn't end in clear punctuation - Arabic speech often doesn't, so this was the main source of perceived lag), onNumberSeconds 2.5->1.5 (still enough room to finish reading out a phone/tracking number without cutting it off, just not as long a hold).",
-  "stopSpeakingPlan": { "numWords": 1, "voiceSeconds": 0.2, "backoffSeconds": 0.8 },
+  "stopSpeakingPlan": {
+    "numWords": 1,
+    "voiceSeconds": 0.2,
+    "backoffSeconds": 0.8
+  },
   "_stopSpeakingPlan_note": "numWords/voiceSeconds unchanged - still stops instantly on a single quiet interruption word (e.g. لحظة/wait), verified working. backoffSeconds lowered from 1.5 to 0.8 on 2026-08-24: at the very high interruption sensitivity set here, a 1.5s backoff after any detected interruption (including background noise/breath false positives) was compounding into the reported sluggishness - 0.8s still gives the customer real room before the assistant resumes, without stacking as much delay on a false trigger.",
   "backgroundDenoisingEnabled": true,
   "silenceTimeoutSeconds": 45,
@@ -60,16 +413,62 @@
     "structuredDataSchema": {
       "type": "object",
       "properties": {
-        "customer_name": { "type": "string" },
-        "request_type": { "type": "string", "enum": ["quote_request", "shipment_tracking", "shipping_service_question", "customs_question", "meeting_request", "document_request", "existing_customer", "new_customer", "general_inquiry", "complaint", "follow_up", "contact_request", "other"] },
-        "quote_requested": { "type": "boolean" },
-        "meeting_booked": { "type": "boolean" },
-        "shipment_number": { "type": "string" },
-        "call_result": { "type": "string", "description": "Short outcome label, e.g. 'quote_logged', 'meeting_booked', 'escalated', 'answered_question', 'no_action_needed', 'transferred_to_human'" },
-        "customer_status": { "type": "string", "enum": ["new", "contacted", "quote_requested", "meeting_scheduled", "customer", "human_required", "closed"] },
-        "human_required": { "type": "boolean", "description": "True if this call needed human follow-up or was transferred, per the escalation rules in the system prompt" }
+        "customer_name": {
+          "type": "string"
+        },
+        "request_type": {
+          "type": "string",
+          "enum": [
+            "quote_request",
+            "shipment_tracking",
+            "shipping_service_question",
+            "customs_question",
+            "meeting_request",
+            "document_request",
+            "existing_customer",
+            "new_customer",
+            "general_inquiry",
+            "complaint",
+            "follow_up",
+            "contact_request",
+            "other"
+          ]
+        },
+        "quote_requested": {
+          "type": "boolean"
+        },
+        "meeting_booked": {
+          "type": "boolean"
+        },
+        "shipment_number": {
+          "type": "string"
+        },
+        "call_result": {
+          "type": "string",
+          "description": "Short outcome label, e.g. 'quote_logged', 'meeting_booked', 'escalated', 'answered_question', 'no_action_needed', 'transferred_to_human'"
+        },
+        "customer_status": {
+          "type": "string",
+          "enum": [
+            "new",
+            "contacted",
+            "quote_requested",
+            "meeting_scheduled",
+            "customer",
+            "human_required",
+            "closed"
+          ]
+        },
+        "human_required": {
+          "type": "boolean",
+          "description": "True if this call needed human follow-up or was transferred, per the escalation rules in the system prompt"
+        }
       },
-      "required": ["request_type", "call_result", "human_required"]
+      "required": [
+        "request_type",
+        "call_result",
+        "human_required"
+      ]
     },
     "successEvaluationPrompt": "Did Rashid correctly understand the customer's request, take the appropriate action (tool call), transfer to a human when escalation criteria were met, and avoid stating anything it could not verify (prices, dates, tracking status, booking success without confirmation)?"
   }
