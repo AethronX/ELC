@@ -1,6 +1,59 @@
 # Known Issues & Gaps — Etihad One
 
-Last updated: 2026-08-25 (pre-demo full live verification).
+Last updated: 2026-08-26 (real test call exposed an unpublished-draft trap).
+
+## Resolved 2026-08-26 — fixes were saved to drafts, never published
+
+**Read this before trusting any "verified live" claim about an n8n workflow.**
+
+n8n separates a workflow's **draft** from its **published (active) version**.
+`update_workflow` edits the draft. `execute_workflow` with
+`executionMode: "manual"` also runs the **draft**. But a production webhook —
+which is what Vapi actually calls — runs the **published** version.
+
+So the 2026-08-25 phone-normalisation fixes were verified against the draft
+and reported as live, while every real call kept running the old published
+code. A real test call proved it: the CRM row was written as
+`phone: "+96876923072"` (unnormalised), so the follow-up call's
+`find_customer` found nothing and the caller was not recognised.
+
+Fixed by publishing all three edited workflows (Tools Router, Post Call,
+Website Lead Intake). Re-verified with `executionMode: "production"`, which
+does run the published version: the phone now arrives normalised as
+`96876923072` and `find_customer` returns the existing customer.
+
+**Rule going forward:** after any `update_workflow`, call `publish_workflow`,
+then confirm `versionId === activeVersionId` via `get_workflow_details`, and
+verify with `executionMode: "production"` — never with `"manual"` alone.
+
+Note: the Vapi assistant patches were never affected. The Vapi Connect
+workflow is run manually on purpose and its HTTP node hits the real Vapi API,
+whose response was checked each time.
+
+## Resolved 2026-08-26 — a question was saved as the customer's name
+
+The same test call saved `customer_name: "اسمك الكريم؟"` — the assistant
+copied the example question wording out of the system prompt and passed it as
+the value. Two guards now:
+
+- Prompt: customer_name must be the name the customer actually spoke; if it
+  wasn't caught clearly, omit the field rather than echo the question.
+- Tools Router `Flatten Tool Call`: drops customer_name when it is empty,
+  over 60 characters, or contains `?`/`؟`, so the CRM keeps its previous
+  value instead of storing a question.
+
+Also added: `create_meeting` is now told to pass customer_name, so booking a
+meeting no longer files it against an unnamed number.
+
+### Follow-up needed (data cleanup)
+
+The Customers sheet holds several rows for the tester's number from repeated
+trials, including one whose name is the question text. De-duplicate by phone,
+keep the most recently updated row, and delete the `اسمك الكريم؟` row.
+
+---
+
+Previously updated: 2026-08-25 (pre-demo full live verification).
 
 ## Resolved 2026-08-25 (pre-demo verification) — phone lookups never matched
 
